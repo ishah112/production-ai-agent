@@ -1,8 +1,7 @@
 from fastapi import FastAPI
+from app.db.connection import get_connection
 
 app = FastAPI()
-
-from app.db.connection import get_connection
 
 @app.get("/health")
 def health() -> dict:
@@ -14,3 +13,7 @@ def db_health() -> dict:
         with conn.cursor() as curr:
             curr.execute("SELECT 1")
     return {"db": "ok"}
+
+from app.api.orders import router as orders_router
+app.include_router(orders_router)
+
