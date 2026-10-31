@@ -21,7 +21,7 @@ def process_refund(order_id: int):
             
             # 2. Already refunded? Don't retry — return the existing refund
             if order["status"] == "REFUNDED":
-                curr.execute("SELECT * FROM refunds where order_id=%d", (order_id,))
+                curr.execute("SELECT * FROM refunds where order_id=%s", (order_id,))
                 return curr.fetchone()
 
             # 3. Only execute if not done before
