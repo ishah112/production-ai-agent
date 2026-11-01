@@ -11,11 +11,11 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS refunds (
     refund_id SERIAL PRIMARY KEY,
     order_id INT NOT NULL REFERENCES orders(id),
-    idempotency_key TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL UNIQUE,
     amount_cents INT NOT NULL CHECK (amount_cents > 0),
     status TEXT NOT NULL DEFAULT 'COMPLETED',
     created_at TIMESTAMPTZ DEFAULT now()
-)
+);
 CREATE INDEX IF NOT EXISTS idx_refunds_order_id ON refunds(order_id);
 
 

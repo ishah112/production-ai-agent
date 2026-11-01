@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: app}
+  template:
+    metadata:
+      labels: {app: app}
+    spec:
+      containers:
+        - name: app
+          image: production-ai-agent-app:latest
+          imagePullPolicy: Never
+          ports: [{containerPort: 8000}]
+          env:
+            - {name: DATABASE_URL, value: "postgresql://postgres:postgres@postgres:5432/production_ai"}
+            - {name: OTEL_SDK_DISABLED, value: "true"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector: {app: app}
+  ports: [{port: 8000, targetPort: 8000}]
