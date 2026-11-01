@@ -7,6 +7,10 @@ h11==0.16.0
 httptools==0.9.0
 idna==3.20
 opentelemetry-api==1.45.1
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-psycopg
+opentelemetry-exporter-otlp-proto-grpc
 prometheus-fastapi-instrumentator
 psycopg==3.3.6
 psycopg-binary==3.3.6
