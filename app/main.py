@@ -3,6 +3,11 @@ from app.db.connection import get_connection
 
 app = FastAPI()
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
+# instruments every request (count + latency histogram, labelled by method/path/status), and adds the /metrics route. No manual route needed.
+Instrumentator().instrument(app).expose(app)
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
