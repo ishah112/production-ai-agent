@@ -1,0 +1,26 @@
+replicaCount: 1
+
+app:
+  image:
+    repository: production-ai-agent-app
+    tag: "latest"
+    pullPolicy: Never
+  service:
+    port: 8000
+  otelDisabled: "true"
+
+postgres:
+  image: pgvector/pgvector:pg16
+  service:
+    port: 5432
+  database: production_ai
+  user: postgres
+  password: postgres
+  storage:
+    size: 1Gi
+
+redis:
+  image: redis:7-alpine
+  service:
+    port: 6379
+
