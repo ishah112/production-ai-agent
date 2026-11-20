@@ -2,6 +2,7 @@ from dotenv import load_dotenv                      # reads local .env file and 
 from langchain_openai import ChatOpenAI             # a client object for talking to OpenAI's chat models
 from langchain_core.messages import HumanMessage    # a message from the user
 from langgraph.graph import MessagesState, StateGraph, START, END   
+from langgraph.checkpoint.redis import RedisSaver
 
 load_dotenv()
 
@@ -23,6 +24,27 @@ graph.add_edge("call_model", END) # After call_model finishes, stop.
 # the whole flow is: START → call_model → END. One LLM call. No loop yet 
 agent = graph.compile() # Turns the blueprint into a runnable agent.
 
-if __name__ == "__main__":
-    result = agent.invoke({"messages": [HumanMessage(content="What is 2 + 2?")]})
-    print(result["messages"][-1].content)   # [-1] is the last item, AI's reply
+def get_text(message):
+    if isinstance(message.content, str):
+        return message.content
+    return " ".join(
+        block.get("text", "")
+        for block in message.content
+        if block.get("type") == "text"
+    )
+
+with RedisSaver.from_conn_string("redis://localhost:6379") as checkpointer:
+    checkpointer.setup()  # creates the search indices RedisSaver needs — run once, it's idempotent
+    agent = graph.compile(checkpointer=checkpointer)
+
+    config = {"configurable": {"thread_id": "test-1"}}
+    result1 = agent.invoke({"messages": [HumanMessage(content="What is 2 + 2?")]}, config)
+    # print the last message's text — expect 4
+    print(get_text(result1["messages"][-1]))
+
+    result2 = agent.invoke({"messages": [HumanMessage(content="And what is that plus 3?")]}, config)
+    # print the last message's text — expect 7
+    print(get_text(result2["messages"][-1]))
+
+    
+
