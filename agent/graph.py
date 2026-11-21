@@ -12,25 +12,37 @@ llm = ChatOpenAI(model="gpt-5-pro", temperature=0)
 import json
 from langchain_core.tools import tool
 from langgraph.prebuilt import ToolNode, tools_condition
-from app.db.orders import fetch_order_status as db_fetch_order_status
+from app.db.orders import fetch_order_status as db_fetch_order, process_refund as db_process_refund
 
 @tool
 def fetch_order_status(order_id: int) -> str:
     """Look up an order by its ID and return its item, amount, and status.
     Use this when a customer asks where their order is or what its status is."""
-    result = db_fetch_order_status(order_id)
+    result = db_fetch_order(order_id)
     if result is None:
         return "Order not found."
     return json.dumps(result, default=str)
 
-llm_with_tools = llm.bind_tools([fetch_order_status])
+@tool
+def process_refund(order_id: int) -> str:
+    """Process a full refund for an order.
+    ONLY call this when the customer explicitly asks for a refund.
+    Do NOT call it if they only ask about status, mention a problem,
+    or say they are unhappy — ask them to confirm first."""
+    result = db_process_refund(order_id)
+    if result is None:
+        return "Order Not found"
+    
+    return json.dumps(result, default=str)
+
+llm_with_tools = llm.bind_tools([fetch_order_status, process_refund])
 
 def call_model(state: MessagesState):
     return {"messages": [llm_with_tools.invoke(state["messages"])]}
 
 graph = StateGraph(MessagesState)
 graph.add_node("call_model", call_model)
-graph.add_node("tools", ToolNode([fetch_order_status]))
+graph.add_node("tools", ToolNode([fetch_order_status, process_refund]))
 graph.add_edge(START, "call_model")
 # If yes → returns tools -> it calls fetch_order_status
 # If no -> return END
@@ -53,13 +65,9 @@ if __name__ == "__main__":
         checkpointer.setup()
         agent = graph.compile(checkpointer=checkpointer)
 
-        config = {"configurable": {"thread_id": "test-3"}}
+        config = {"configurable": {"thread_id": "test-5"}}
         result = agent.invoke(
-            {"messages": [HumanMessage(content="Where is my order 1?")]},
+            {"messages": [HumanMessage(content="Refund my order 3")]},
             config,
         )
         print(get_text(result["messages"][-1]))
-
-
-    
-
