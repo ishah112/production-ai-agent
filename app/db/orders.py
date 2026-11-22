@@ -18,6 +18,10 @@ def process_refund(order_id: int):
             # 1. Check the current status first, and lock the row
             curr.execute("SELECT * FROM orders where id=%s", (order_id,))
             order = curr.fetchone()
+
+            # The order may not exist; stop before reading its status or creating a refund.
+            if order is None:
+                return None
             
             # 2. Already refunded? Don't retry — return the existing refund
             if order["status"] == "REFUNDED":

@@ -6,7 +6,7 @@ from langgraph.checkpoint.redis import RedisSaver
 
 load_dotenv()
 
-llm = ChatOpenAI(model="gpt-5-pro", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 # temperature=0 means "be as deterministic as possible". the same question gets the same grounded answer
 
 import json
@@ -58,16 +58,22 @@ def get_text(message):
         if block.get("type") == "text"
     )
 
+def build_agent():
+    checkpointer_ctx = RedisSaver.from_conn_string("redis://localhost:6379")
+    checkpointer = checkpointer_ctx.__enter__()
+    checkpointer.setup()
+    agent = graph.compile(checkpointer=checkpointer)
+    return agent, checkpointer_ctx
 
 
 if __name__ == "__main__":
-    with RedisSaver.from_conn_string("redis://localhost:6379") as checkpointer:
-        checkpointer.setup()
-        agent = graph.compile(checkpointer=checkpointer)
-
-        config = {"configurable": {"thread_id": "test-5"}}
+    agent, checkpointer_ctx = build_agent()
+    config = {"configurable": {"thread_id": "test-5"}}
+    try:
         result = agent.invoke(
             {"messages": [HumanMessage(content="Refund my order 3")]},
             config,
         )
         print(get_text(result["messages"][-1]))
+    finally:
+        checkpointer_ctx.__exit__(None, None, None)
