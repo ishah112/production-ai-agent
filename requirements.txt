@@ -28,6 +28,7 @@ websockets==17.3
 langgraph
 langchain-openai
 langgraph-checkpoint-redis
+pytest
 
 
 
